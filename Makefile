@@ -8,11 +8,11 @@ UNAME = $(shell uname -s)
 WINDOWSID = MINGW32_NT-6.1
 
 ifeq ($(UNAME), $(WINDOWSID))
-INCLUDE_PYTHON = C:\Python26\include
+INCLUDE_PYTHON = C:\Python27\include
 EXEC_GENERATE = python instr-generate.py
 LIBS = -lws2_32
 else
-INCLUDE_PYTHON = /usr/include/python2.6/
+INCLUDE_PYTHON = /usr/include/python2.7/
 EXEC_GENERATE = ./instr-generate.py
 LIBS = -lm
 endif
@@ -25,7 +25,7 @@ CFLAGS	 =	-W -Wall -Wextra -Os -g -I $(INCLUDE_PYTHON)
 LDFLAGS	 =	
 
 ifeq ($(UNAME), $(WINDOWSID))
-LIBRARY_PATH = C:\Python26\libs\
+LIBRARY_PATH = C:\Python27\libs\
 all: $(TARGET_STANDALONE) $(TARGET_PYTHON)
 else
 all: $(TARGET_STANDALONE) $(TARGET_PYTHON)
@@ -35,7 +35,7 @@ $(TARGET_STANDALONE): $(OBJS_STANDALONE) $(DEPS)
 	$(CC) -o $@ $(OBJS_STANDALONE) $(LIBS)
 
 $(TARGET_PYTHON): $(OBJS_PYTHON) $(DEPS)
-	$(CC) -o $@ $(OBJS_PYTHON) $(LIBS) -lpython2.6 -shared
+	$(CC) -o $@ $(OBJS_PYTHON) $(LIBS) -lpython2.7 -shared
 
 %.o: %.c $(DEPS)
 	$(CC) -c $(CFLAGS) -o $@ $<

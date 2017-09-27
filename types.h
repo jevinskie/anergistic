@@ -87,4 +87,21 @@ static inline u32 se10(u32 v) { return se(v, 10); }
 static inline u32 se16(u32 v) { return se(v, 16); }
 static inline u32 se18(u32 v) { return se(v, 18); }
 
+//Endian swap for u32
+#define _ES32(val) \
+	((u32)(((((u32)val) & 0xff000000) >> 24) | \
+	       ((((u32)val) & 0x00ff0000) >> 8 ) | \
+	       ((((u32)val) & 0x0000ff00) << 8 ) | \
+	       ((((u32)val) & 0x000000ff) << 24)))
+
+//Endian swap for u64.
+#define _ES64(val) \
+	((u64)(((((u64)val) & 0xff00000000000000ull) >> 56) | \
+	       ((((u64)val) & 0x00ff000000000000ull) >> 40) | \
+	       ((((u64)val) & 0x0000ff0000000000ull) >> 24) | \
+	       ((((u64)val) & 0x000000ff00000000ull) >> 8 ) | \
+	       ((((u64)val) & 0x00000000ff000000ull) << 8 ) | \
+	       ((((u64)val) & 0x0000000000ff0000ull) << 24) | \
+	       ((((u64)val) & 0x000000000000ff00ull) << 40) | \
+	       ((((u64)val) & 0x00000000000000ffull) << 56)))
 #endif

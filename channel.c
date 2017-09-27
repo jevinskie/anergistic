@@ -13,11 +13,56 @@
 #include "config.h"
 #include "channel.h"
 
-static u32 MFC_LSA, MFC_EAH, MFC_EAL, MFC_Size, MFC_TagID, MFC_TagMask, MFC_TagStat;
+//MFC channel values.
+static u32 MFC_LSA;
+static u32 MFC_EAH;
+static u32 MFC_EAL;
+static u32 MFC_Size;
+static u32 MFC_TagID;
+static u32 MFC_TagMask;
+static u32 MFC_TagStat;
+
+//HW_Ringbuf
+static u32 RingBuf_offset = 0;
+static u32 IsRingBufReadLocked = 0;
 
 #define MFC_GET_CMD 0x40
 #define MFC_SNDSIG_CMD 0xA0
 
+void handle_hw_cmd(u32 cmd)
+{
+	switch (cmd)
+	{
+	case HW_CMD_TYPE_Reset_Ringbuf:
+		printf("Reset_RingBuf\n");
+		RingBuf_offset = 0;
+		break;
+	case HW_CMD_TYPE_ReadLock_Ringbuf:
+		printf("Lock_RingBuf\n");
+		IsRingBufReadLocked = 1;
+		break;
+	default:
+		printf("unknown command: %08x\n", cmd);
+	}
+}
+
+u32 handle_hw_ringbuf_read()
+{
+	if (IsRingBufReadLocked != 1)
+	{
+		u32 value = 0;
+		printf("RingBuf offset: %08x\n", RingBuf_offset);
+		FILE *f = fopen("ringbuf", "rb");
+		fseek(f, (RingBuf_offset * 4), SEEK_SET);
+		fread(&value, 4, 1, f);
+		value = _ES32(value);
+		printf("RingBuf value: %08x\n", value);
+		RingBuf_offset++;
+		fclose(f);
+		return value;
+	}
+	return 0;
+}
 
 void handle_mfc_command(u32 cmd)
 {
@@ -108,6 +153,10 @@ void channel_wrch(int ch, int reg)
 	case 27:
 		printf("MFC_RdAtomicStat %08x\n", r);
 		break;
+	case 64:
+		printf("HW_Cmd: ", r);
+		handle_hw_cmd(r);
+		break;
 	default:
 		printf("UNKNOWN CHANNEL\n");
 	}
@@ -129,6 +178,10 @@ void channel_rdch(int ch, int reg)
 		break;
 	case 27:
 		printf("MFC_RdAtomicStat %08x\n", r);
+		break;
+	case 73:
+		printf("HW_Read_RingBuf\n");
+		r = handle_hw_ringbuf_read();
 		break;
 	}
 	ctx->reg[reg][0] = r;
