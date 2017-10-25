@@ -502,10 +502,9 @@
 
 01101000010,rr,cgx
 {
-		int i;
+	int i;
 	for (i = 0; i < 4; ++i)
 	{
-		
 		u32 data = raw[i] + rbw[i];
 		data = ((data < raw[i]) || ((data == 0xffffffff) && (rtw[i] & 0x1)));
 		rtw[i] = data;
