@@ -5,8 +5,11 @@
 #ifndef CHANNELS_H__
 #define CHANNELS_H__
 
-#define HW_CMD_TYPE_Reset_Ringbuf    0x10000
-#define HW_CMD_TYPE_ReadLock_Ringbuf 0x60000
+#define HW_RINGBUF_SIZE 4 //chosen by fair dice roll ;)
+#define HW_CMD_TYPE_Reset_Ringbuf         0x10000
+#define HW_CMD_TYPE_ReadLock_Ringbuf      0x40000
+#define HW_CMD_TYPE_WriteLock_Ringbuf     0x20000
+#define HW_CMD_TYPE_ReadWriteLock_Ringbuf 0x60000
 
 void channel_wrch(int ch, int reg);
 void channel_rdch(int ch, int reg);

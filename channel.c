@@ -23,9 +23,13 @@ static u32 MFC_TagMask;
 static u32 MFC_TagStat;
 
 //HW_Ringbuf
-static u32 RingBuf_offset = 0;
-static u32 IsRingBufReadLocked = 0;
+static u32 HwRingBuf_offset = 0;
+static u32 IsHwRingBufReadLocked = 0;
+static u32 IsHwRingBufWriteLocked = 0;
+static u32 IsRingBufInit = 0;
+static u32 *HwRingBuf[HW_RINGBUF_SIZE] = {};
 
+#define MFC_PUT_CMD 0x20
 #define MFC_GET_CMD 0x40
 #define MFC_SNDSIG_CMD 0xA0
 
@@ -35,33 +39,68 @@ void handle_hw_cmd(u32 cmd)
 	{
 	case HW_CMD_TYPE_Reset_Ringbuf:
 		printf("Reset_RingBuf\n");
-		RingBuf_offset = 0;
+		HwRingBuf_offset = 0;
 		break;
 	case HW_CMD_TYPE_ReadLock_Ringbuf:
-		printf("Lock_RingBuf\n");
-		IsRingBufReadLocked = 1;
+		printf("ReadLock_RingBuf\n");
+		IsHwRingBufReadLocked = 1;
+		break;
+	case HW_CMD_TYPE_WriteLock_Ringbuf:
+		printf("WriteLock_RingBuf\n");
+		IsHwRingBufWriteLocked = 1;
+		break;
+	case HW_CMD_TYPE_ReadWriteLock_Ringbuf:
+		printf("ReadWriteLock_RingBuf\n");
+		IsHwRingBufReadLocked = 1;
+		IsHwRingBufWriteLocked = 1;
 		break;
 	default:
 		printf("unknown command: %08x\n", cmd);
+		break;
 	}
+}
+
+void hw_ringbuf_init()
+{
+	FILE *f = fopen("ringbuf", "rb");
+	fseek(f, 0, SEEK_SET);
+	fread(&HwRingBuf, 4, HW_RINGBUF_SIZE, f);
+	IsRingBufInit = 1;
+	fclose(f);
 }
 
 u32 handle_hw_ringbuf_read()
 {
-	if (IsRingBufReadLocked != 1)
+	if (IsHwRingBufReadLocked != 1)
 	{
+		if (IsRingBufInit == 0)
+			hw_ringbuf_init();
+
 		u32 value = 0;
-		printf("RingBuf offset: %08x\n", RingBuf_offset);
-		FILE *f = fopen("ringbuf", "rb");
-		fseek(f, (RingBuf_offset * 4), SEEK_SET);
-		fread(&value, 4, 1, f);
-		value = _ES32(value);
-		printf("RingBuf value: %08x\n", value);
-		RingBuf_offset++;
-		fclose(f);
+		printf("HwRingBuf offset: %08x\n", HwRingBuf_offset);
+		value = _ES32(*((u32*)(HwRingBuf + HwRingBuf_offset)));
+		printf("HwRingBuf value: %08x\n", value);
+		HwRingBuf_offset++;
 		return value;
 	}
+	printf("HwRingBuf Read Access Denied\n");
 	return 0;
+}
+
+void handle_hw_ringbuf_write (u32 value)
+{
+	if (IsHwRingBufWriteLocked != 1)
+	{
+		if (IsRingBufInit == 0)
+			hw_ringbuf_init();
+		
+		printf("HwRingBuf offset: %08x\n", HwRingBuf_offset);
+		printf("HwRingBuf value: %08x\n", value);
+		*((u32*)(HwRingBuf + HwRingBuf_offset)) = _ES32(value);
+		HwRingBuf_offset++;
+	}
+	else
+		printf("HwRingBuf Write Access Denied\n");
 }
 
 void handle_mfc_command(u32 cmd)
@@ -71,7 +110,7 @@ void handle_mfc_command(u32 cmd)
 	switch (cmd)
 	{
 	case MFC_GET_CMD:
-		printf("MFC_GET (DMA into LS)\n");
+		printf("DMA_GET\n");
 #if 0
 		{
 			FILE *f = fopen("dma", "rb");
@@ -87,8 +126,13 @@ void handle_mfc_command(u32 cmd)
 		}
 #endif
 		break;
+	case MFC_PUT_CMD:
+		printf("DMA_PUT\n");
+		
+		break;
 	default:
 		printf("unknown command\n");
+		break;
 	}
 }
 
@@ -154,8 +198,12 @@ void channel_wrch(int ch, int reg)
 		printf("MFC_RdAtomicStat %08x\n", r);
 		break;
 	case 64:
-		printf("HW_Cmd: ", r);
+		printf("HW_Cmd: ");
 		handle_hw_cmd(r);
+		break;
+	case 72:
+		printf("HW_Write_RingBuf\n");
+		handle_hw_ringbuf_write(r);
 		break;
 	default:
 		printf("UNKNOWN CHANNEL\n");
