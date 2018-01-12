@@ -231,6 +231,10 @@ void channel_rdch(int ch, int reg)
 		printf("HW_Read_RingBuf\n");
 		r = handle_hw_ringbuf_read();
 		break;
+	case 74:
+		printf("CH_RNG\n");
+		r = rand();
+		break;
 	}
 	ctx->reg[reg][0] = r;
 	ctx->reg[reg][1] = 0;
