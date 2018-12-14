@@ -186,7 +186,7 @@ static void gdb_bp_remove(u32 type, u32 addr, u32 len)
 		if (p != NULL) {
 			dbgprintf("gdb: remvoed a breakpoint: %08x bytes at %08x\n", len, addr);
 			p->active = 0;
-			memset(p, 0, sizeof p);
+			memset(p, 0, sizeof(*p));
 		}
 	} while (p != NULL);
 }

@@ -117,7 +117,9 @@ u32 emulate(void)
 {
 	int res;
 
+#ifdef DEBUG_INSTR
 	u32 opc = ctx->pc;
+#endif
 
 	instr = be32(ctx->ls + ctx->pc);
 #ifdef DEBUG_INSTR

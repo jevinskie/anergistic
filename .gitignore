@@ -1,0 +1,7 @@
+*.o
+*.so
+emulate-instrs.c
+emulate-instrs.h
+*.elf
+ls.b
+anergistic
