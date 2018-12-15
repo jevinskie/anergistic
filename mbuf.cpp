@@ -31,8 +31,8 @@ mbuf_ptr_pair mbuf_alloc_non_void(u64 ea, u32 sz) {
 			auto buf_orig_sz = buf->size();
 			buf->resize(buf->size() + sz);
 			memset(buf->data() + buf_orig_sz, 0, sz);
-			return std::make_pair(buf_ea, buf);
 		}
+		return std::make_pair(buf_ea, buf);
 	}
 	auto buf = std::vector<u8>(sz, 0);
 	g_mbuf[ea] = buf;
