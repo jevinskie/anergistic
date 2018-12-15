@@ -1,7 +1,7 @@
-OBJS_STANDALONE = main.o elf.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o
+OBJS_STANDALONE = main.o elf.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o hex.o
 TARGET_STANDALONE	= anergistic
 
-OBJS_PYTHON = python.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o
+OBJS_PYTHON = python.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o hex.o
 TARGET_PYTHON = anergistic.so
 
 UNAME = $(shell uname -s)
