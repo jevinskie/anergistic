@@ -63,10 +63,10 @@ $(TARGET_PYTHON): $(OBJS_PYTHON) $(DEPS)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 emulate-instrs.h: emulate-instrs.h.in instrs instr-generate.py emulate-instrs.c.in
-	$(EXEC_GENERATE) instrs emulate-instrs.h emulate-instrs.c
+	$(EXEC_GENERATE) instrs emulate-instrs.h.in emulate-instrs.h emulate-instrs.c.in emulate-instrs.c
 
 emulate-instrs.c: emulate-instrs.h.in instrs instr-generate.py emulate-instrs.c.in
-	$(EXEC_GENERATE) instrs emulate-instrs.h emulate-instrs.c
+	$(EXEC_GENERATE) instrs emulate-instrs.h.in emulate-instrs.h emulate-instrs.c.in emulate-instrs.c
 
 clean:
 	-rm -f $(TARGET_STANDALONE) $(TARGET_PYTHON) $(OBJS_STANDALONE) $(OBJS_PYTHON) emulate-instrs.h emulate-instrs.c

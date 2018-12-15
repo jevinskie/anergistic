@@ -166,12 +166,12 @@ for fnc in function_bodies:
 	decl += "int %s(%s);\n" % (decorate(fnc), function_args[fnc])
 
 
-for file in sys.argv[2:]:
-	tpl = open(file + ".in").read()
+for file_pair in zip(sys.argv[2::2], sys.argv[3::2]):
+	tpl = open(file_pair[0]).read()
 	tpl = tpl.replace('###INSTRUCTIONS###', instrs)
 	tpl = tpl.replace('###CODE###', code)
 	tpl = tpl.replace('###DECL###', decl)
-	out = open(file, "w")
+	out = open(file_pair[1], "w")
 	out.write(tpl)
 	out.close()
 	tbl.close()
