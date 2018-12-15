@@ -1,7 +1,7 @@
-OBJS_STANDALONE = main.o elf.o emulate.o emulate-instrs.o helper.o channel.o gdb.o
+OBJS_STANDALONE = main.o elf.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o
 TARGET_STANDALONE	= anergistic
 
-OBJS_PYTHON = python.o emulate.o emulate-instrs.o helper.o channel.o gdb.o
+OBJS_PYTHON = python.o emulate.o emulate-instrs.o helper.o channel.o gdb.o mbuf.o
 TARGET_PYTHON = anergistic.so
 
 UNAME = $(shell uname -s)
@@ -18,18 +18,21 @@ EXEC_GENERATE = ./instr-generate.py
 LIBS = -lm
 PYTHON_LIB = -L $(shell brew --prefix python2)/Frameworks/Python.framework/Versions/Current/lib -lpython2.7
 CC = clang
+CXX = clang++
 else
 INCLUDE_PYTHON = /usr/include/python2.7/
 EXEC_GENERATE = ./instr-generate.py
 LIBS = -lm
 PYTHON_LIB = -lpython2.7
 CC	 =	gcc
+CXX  =  g++
 endif
 
 
 DEPS	 =	Makefile emulate-instrs.h config.h types.h
 
-CFLAGS	 =	-W -Wall -Wextra -Os -g -I $(INCLUDE_PYTHON)
+CFLAGS	 =	-W -Wall -Wextra -O0 -g -I $(INCLUDE_PYTHON)
+CXXFLAGS =  -W -Wall -Wextra -O0 -g -std=gnu++17
 LDFLAGS	 =	
 
 # CFLAGS += -DDEBUG_INSTR
@@ -48,13 +51,16 @@ all: $(TARGET_STANDALONE) $(TARGET_PYTHON)
 endif
 
 $(TARGET_STANDALONE): $(OBJS_STANDALONE) $(DEPS)
-	$(CC) -o $@ $(OBJS_STANDALONE) $(LIBS)
+	$(CXX) -o $@ $(OBJS_STANDALONE) $(LIBS)
 
 $(TARGET_PYTHON): $(OBJS_PYTHON) $(DEPS)
-	$(CC) -o $@ $(OBJS_PYTHON) $(LIBS) $(PYTHON_LIB) -shared
+	$(CXX) -o $@ $(OBJS_PYTHON) $(LIBS) $(PYTHON_LIB) -shared
 
 %.o: %.c $(DEPS)
 	$(CC) -c $(CFLAGS) -o $@ $<
+
+%.o: %.cpp $(DEPS)
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 emulate-instrs.h: emulate-instrs.h.in instrs instr-generate.py emulate-instrs.c.in
 	$(EXEC_GENERATE) instrs emulate-instrs.h emulate-instrs.c
