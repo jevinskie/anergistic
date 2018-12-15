@@ -25,27 +25,13 @@ std::optional<mbuf_ptr_pair> mbuf_find(u64 ea, u32 sz, bool include_sz) {
 
 mbuf_ptr_pair mbuf_alloc_non_void(u64 ea, u32 sz) {
 	if (auto found_buf = mbuf_find(ea, sz, false)) {
-		auto buf_ea = *found_buf.first;
-		auto buf = *found_buf.second;
-		if (buf_ea + buf.size() == ea) {
-			auto buf_orig_sz = buf.size();
-			buf.resize(buf.size() + sz);
-			memset(buf.data() + buf_orig_sz, 0, sz);
-			return std::make_pair(buf_ea, &buf);
-		}
-	}
-	auto buf = std::vector<u8>(sz, 0);
-	g_mbuf[ea] = buf;
-	return std::make_pair(ea, &buf);
-
-	for (auto &bufp : g_mbuf) {
-		auto buf_ea = bufp.first;
-		auto buf = bufp.second;
-		if (buf_ea + buf.size() <= ea) {
-			auto buf_orig_sz = buf.size();
-			buf.resize(buf.size() + sz);
-			memset(buf.data() + buf_orig_sz, 0, sz);
-			return std::make_pair(buf_ea, &buf);
+		auto buf_ea = found_buf->first;
+		auto buf = found_buf->second;
+		if (buf_ea + buf->size() == ea) {
+			auto buf_orig_sz = buf->size();
+			buf->resize(buf->size() + sz);
+			memset(buf->data() + buf_orig_sz, 0, sz);
+			return std::make_pair(buf_ea, buf);
 		}
 	}
 	auto buf = std::vector<u8>(sz, 0);
