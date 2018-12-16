@@ -2,50 +2,54 @@
 
 #include "hex.h"
 
+#include "debugbreak/debugbreak.h"
+
+#include <cstring>
 #include <map>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
-std::map<u64, std::vector<u8>> g_mbuf;
+std::map<u64, std::unique_ptr<std::vector<u8>>> g_mbuf;
 
-typedef std::pair<u64, std::vector<u8> *> mbuf_ptr_pair;
-typedef std::pair<u64, std::vector<u8> &> mbuf_ref_pair;
+typedef std::pair<u64, std::unique_ptr<std::vector<u8>>> mbuf_ptr_pair;
 
 std::optional<mbuf_ptr_pair> mbuf_find(u64 ea, u32 sz, bool include_sz) {
 	printf("mbuf_find(0x%016llx, 0x%08x, %d)\n", ea, sz, include_sz);
 	for (auto &bufp : g_mbuf) {
 		auto buf_ea = bufp.first;
-		auto buf = bufp.second;
-		if (include_sz && buf_ea + buf.size() <= ea + sz) {
-			return std::make_pair(buf_ea, &buf);
-		} else if (buf_ea + buf.size() < ea) {
-			return std::make_pair(buf_ea, &buf);
+		auto buf = &bufp.second;
+		if (include_sz && buf_ea + (*buf)->size() <= ea + sz) {
+			return std::make_optional(bufp);
+		} else if (buf_ea + (*buf)->size() < ea) {
+			return std::make_optional(bufp);
 		}
 	}
-	return std::nullopt;
+	// return std::nullopt;
 }
 
 mbuf_ptr_pair mbuf_alloc_non_void(u64 ea, u32 sz) {
 	printf("mbuf_alloc_non_void(0x%016llx, 0x%08x)\n", ea, sz);
 	if (auto found_buf = mbuf_find(ea, sz, false)) {
 		auto buf_ea = found_buf->first;
-		auto buf = found_buf->second;
-		if (buf_ea + buf->size() == ea) {
-			auto buf_orig_sz = buf->size();
-			buf->resize(buf->size() + sz);
-			memset(buf->data() + buf_orig_sz, 0, sz);
+		auto buf = &found_buf->second;
+		if (buf_ea + (*buf)->size() == ea) {
+			auto buf_orig_sz = (*buf)->size();
+			(*buf)->resize(buf_orig_sz + sz);
+			printf("mbuf_alloc_non_void memsetting\n");
+			memset((*buf)->data() + buf_orig_sz, 0, sz);
 			printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) resizing from %p\n", ea, sz, (void*)buf_orig_sz);
 
 		} else {
 			printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) found existing alloc of appropriate size\n", ea, sz);
 		}
-		return std::make_pair(buf_ea, buf);
+		return std::make_pair(buf_ea, *buf);
 	}
-	auto buf = std::vector<u8>(sz, 0);
-	g_mbuf[ea] = buf;
+	auto buf = std::make_unique<std::vector<u8>>(sz, 0);
+	g_mbuf[ea] = std::move(buf);
 	printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) new alloc\n", ea, sz);
-	return std::make_pair(ea, &buf);
+	return std::make_pair(ea, buf);
 }
 
 extern "C"
@@ -61,14 +65,16 @@ void mbuf_set(u64 ea, const u8 *buf, u32 sz) {
 	mbuf_ptr_pair bufp;
 	if (auto b = mbuf_find(ea, sz, true)) {
 		printf("mbuf_set(0x%016llx, %p, 0x%08x) found existing\n", ea, buf, sz);
-		bufp = *b;
+		bufp = b.value();
 	} else {
 		printf("mbuf_set(0x%016llx, %p, 0x%08x) allocing new\n", ea, buf, sz);
 		bufp = mbuf_alloc_non_void(ea, sz);
 	}
 	auto bufp_off = bufp.second->data() + (ea - bufp.first);
+	printf("bufp_off: %p\n", bufp_off);
 	printf("bufp_off before: ");
 	print_hex(bufp_off, 0x10);
+	// debug_break();
 	printf("\n");
 	memcpy(bufp_off, buf, sz);
 	printf("bufp_off after: ");
