@@ -33,6 +33,7 @@ public:
 MemBuf gmb;
 
 void MemBuf::alloc(u64 ea, u32 sz) {
+	printf("MemBuf::alloc(0x%016llx, 0x%08x)\n", ea, sz);
 	if (is_alloced(ea)) {
 		auto mbuf = find(ea);
 		const auto buf_ea = mbuf.first;
@@ -47,6 +48,18 @@ void MemBuf::alloc(u64 ea, u32 sz) {
 	} else {
 		mbufs[ea] = std::make_unique<mbufs_t::mapped_type::element_type>(sz, 0);
 	}
+	if (is_alloced(ea + sz)) {
+		printf("found adjacent\n");
+		auto mbuf = find(ea);
+		auto buf = &mbuf.second.get();
+		const auto buf_sz = (*buf)->size();
+		auto adj_mbuf = find(ea + sz);
+		auto adj_buf = &mbuf.second.get();
+		const auto adj_buf_sz = (*adj_buf)->size();
+		(*buf)->resize(buf_sz + adj_buf_sz);
+		memcpy((*buf)->data() + buf_sz, (*adj_buf)->data(), adj_buf_sz);
+		mbufs.erase(adj_mbuf.first);
+	}
 }
 
 bool MemBuf::is_alloced(u64 ea) {
@@ -54,16 +67,21 @@ bool MemBuf::is_alloced(u64 ea) {
 }
 
 bool MemBuf::is_alloced(u64 ea, u32 sz) {
+	printf("MemBuf::is_alloced(0x%016llx, 0x%08x)\n", ea, sz);
 	const auto bufp = mbufs.lower_bound(ea);
 	if (bufp == mbufs.cend()) {
+		printf("MemBuf::is_alloced(0x%016llx, 0x%08x) = false cend\n", ea, sz);
 		return false;
 	}
 	const auto buf_ea = bufp->first;
 	const auto buf = &bufp->second;
 	const auto buf_ea_end = buf_ea + (*buf)->size();
+	printf("MemBuf::is_alloced(0x%016llx, 0x%08x) buf_ea = 0x%016llx buf_ea_end = 0x%016llx\n", ea, sz, buf_ea, buf_ea_end);
 	if (ea >= buf_ea && ea + sz <= buf_ea_end) {
+		printf("MemBuf::is_alloced(0x%016llx, 0x%08x) = true\n", ea, sz);
 		return true;
 	}
+	printf("MemBuf::is_alloced(0x%016llx, 0x%08x) = false\n", ea, sz);
 	return false;
 }
 
