@@ -10,22 +10,21 @@ if (${FORCE_COLORED_OUTPUT})
     endif ()
 endif ()
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS YES)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED YES)
+set(CMAKE_C_EXTENSIONS YES)
+
 add_subdirectory(googletest)
+add_subdirectory(fmt)
 
-add_executable(anergistic main.c elf.c emulate.c emulate-instrs.c helper.c channel.c gdb.c mbuf.cpp hex.c)
+add_executable(anergistic main.c elf.c emulate.c emulate-instrs.c helper.c channel.c gdb.c mbuf.cpp hex.c dbgtools/src/callstack.cpp)
 
-target_include_directories(anergistic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(anergistic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/dbgtools/include)
 target_compile_options(anergistic PRIVATE -Wall -Wextra)
-
-
-set_target_properties(anergistic PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS YES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED YES
-    C_EXTENSIONS YES
-)
+target_link_libraries(anergistic fmt)
 
 add_custom_command(
     OUTPUT emulate-instrs.h emulate-instrs.c
@@ -34,17 +33,7 @@ add_custom_command(
 )
 
 include(GoogleTest)
-add_executable(mbuf-test mbuf.cpp hex.c test/main.cpp test/mbuf-test.cpp)
-target_include_directories(mbuf-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${gtest_SOURCE_DIR}/include)
-target_link_libraries(mbuf-test gtest)
-gtest_add_tests(TARGET      mbuf-test
-)
-
-set_target_properties(mbuf-test PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS YES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED YES
-    C_EXTENSIONS YES
-)
+add_executable(mbuf-test mbuf.cpp hex.c dbgtools/src/callstack.cpp test/main.cpp test/mbuf-test.cpp)
+target_include_directories(mbuf-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/dbgtools/include ${gtest_SOURCE_DIR}/include)
+target_link_libraries(mbuf-test fmt gtest)
+gtest_add_tests(TARGET mbuf-test)
