@@ -142,12 +142,11 @@ extern "C"
 u8 *mbuf_get(u64 ea, u32 sz) {
 	printf("mbuf_get(0x%016llx, 0x%08x)\n", ea, sz);
 	if (!gmb.is_alloced(ea, sz)) {
-		return nullptr;
-	} else {
 		gmb.alloc(ea, sz);
-		auto mbuf = gmb.find(ea);
-		const auto buf_ea = mbuf.first;
-		auto buf = &mbuf.second.get();
-		return (*buf)->data() + (ea - buf_ea);
 	}
+	gmb.alloc(ea, sz);
+	auto mbuf = gmb.find(ea);
+	const auto buf_ea = mbuf.first;
+	auto buf = &mbuf.second.get();
+	return (*buf)->data() + (ea - buf_ea);
 }

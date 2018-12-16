@@ -6,20 +6,18 @@
 
 #include <string.h>
 
-TEST(MBufGetNotAlloced, MBuf) {
+TEST(MBufIsAllocedNot, MBuf) {
 	const u64 ea = 0x10000000;
 	const u32 sz = 0x1000;
-	auto bufp = mbuf_get(ea, sz);
-	EXPECT_EQ(bufp, nullptr);
+	EXPECT_FALSE(mbuf_is_alloced(ea, sz));
 }
 
 TEST(MBufGetAlloced, MBuf) {
 	const u64 ea = 0x10000000;
 	const u32 sz = 0x1000;
+	EXPECT_FALSE(mbuf_is_alloced(ea, sz));
 	auto bufp = mbuf_get(ea, sz);
-	EXPECT_EQ(bufp, nullptr);
-	mbuf_alloc(ea, sz);
-	bufp = mbuf_get(ea, sz);
+	EXPECT_TRUE(mbuf_is_alloced(ea, sz));
 	EXPECT_NE(bufp, nullptr);
 	for (u32 i = 0; i < sz; ++i) {
 		EXPECT_EQ(bufp[i], 0);
@@ -41,6 +39,14 @@ TEST(MBufSetAlloced, MBuf) {
 	printf("\n");
 	EXPECT_NE(bufp, nullptr);
 	EXPECT_EQ(memcmp(bufp, new_buf, sz), 0);
+	memset(new_buf, 0x00, sz);
+	memcpy(bufp, new_buf, sz);
+	EXPECT_EQ(memcmp(bufp, new_buf, sz), 0);
+	bufp = mbuf_get(ea, sz);
+	printf("bufp: %p ", bufp);
+	print_hex(bufp, 0x10);
+	printf("\n");
+	EXPECT_EQ(memcmp(bufp, new_buf, sz), 0);
 }
 
 TEST(MBufAllocAdjacent, MBuf) {
@@ -52,9 +58,10 @@ TEST(MBufAllocAdjacent, MBuf) {
 	EXPECT_FALSE(mbuf_is_alloced(ea + 2*sz-1, 1));
 	auto orig_bufp = mbuf_get(ea, sz);
 	EXPECT_NE(orig_bufp, nullptr);
+	EXPECT_FALSE(mbuf_is_alloced(ea + sz, sz));
 	auto new_bufp = mbuf_get(ea + sz, sz);
-	EXPECT_EQ(new_bufp, nullptr);
 	mbuf_alloc(ea + sz, sz);
+	EXPECT_TRUE(mbuf_is_alloced(ea + sz, sz));
 	EXPECT_TRUE(mbuf_is_alloced(ea + sz, 1));
 	EXPECT_TRUE(mbuf_is_alloced(ea + sz-1, 1));
 	EXPECT_TRUE(mbuf_is_alloced(ea + 2*sz-1, 1));
