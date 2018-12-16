@@ -4,93 +4,116 @@
 
 #include "debugbreak/debugbreak.h"
 
+#include <cassert>
 #include <cstring>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
-std::map<u64, std::unique_ptr<std::vector<u8>>> g_mbuf;
+typedef std::map<u64, std::unique_ptr<std::vector<u8>>> mbufs_t;
+typedef mbufs_t::value_type mbuf_pair_t;
+typedef std::pair<const u64, std::reference_wrapper<std::unique_ptr<std::vector<u8>>>> mbuf_pair_ref_t;
 
-typedef std::pair<u64, std::unique_ptr<std::vector<u8>>> mbuf_ptr_pair;
+class MemBuf {
+private:
+	mbufs_t mbufs;
 
-std::optional<mbuf_ptr_pair> mbuf_find(u64 ea, u32 sz, bool include_sz) {
-	printf("mbuf_find(0x%016llx, 0x%08x, %d)\n", ea, sz, include_sz);
-	for (auto &bufp : g_mbuf) {
-		auto buf_ea = bufp.first;
-		auto buf = &bufp.second;
-		if (include_sz && buf_ea + (*buf)->size() <= ea + sz) {
-			return std::make_optional(bufp);
-		} else if (buf_ea + (*buf)->size() < ea) {
-			return std::make_optional(bufp);
+public:
+	void alloc(u64 ea, u32 sz);
+	bool is_alloced(u64 ea);
+	bool is_alloced(u64 ea, u32 sz);
+	mbuf_pair_ref_t find(u64 ea);
+	mbuf_pair_ref_t find(u64 ea, u32 sz);
+	mbufs_t::mapped_type& operator[](u64 ea);
+};
+
+MemBuf gmb;
+
+void MemBuf::alloc(u64 ea, u32 sz) {
+	if (is_alloced(ea)) {
+		auto mbuf = find(ea);
+		const auto buf_ea = mbuf.first;
+		auto buf = &mbuf.second.get();
+		const auto buf_sz = (*buf)->size();
+		const auto buf_ea_end = buf_ea + buf_sz;
+		const auto over = buf_ea_end - (ea + sz);
+		if (over > 0) {
+			(*buf)->resize(buf_sz + over);
+			memset((*buf)->data() + buf_sz, 0, over);
 		}
+	} else {
+		mbufs[ea] = std::make_unique<mbufs_t::mapped_type::element_type>(sz, 0);
 	}
-	// return std::nullopt;
 }
 
-mbuf_ptr_pair mbuf_alloc_non_void(u64 ea, u32 sz) {
-	printf("mbuf_alloc_non_void(0x%016llx, 0x%08x)\n", ea, sz);
-	if (auto found_buf = mbuf_find(ea, sz, false)) {
-		auto buf_ea = found_buf->first;
-		auto buf = &found_buf->second;
-		if (buf_ea + (*buf)->size() == ea) {
-			auto buf_orig_sz = (*buf)->size();
-			(*buf)->resize(buf_orig_sz + sz);
-			printf("mbuf_alloc_non_void memsetting\n");
-			memset((*buf)->data() + buf_orig_sz, 0, sz);
-			printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) resizing from %p\n", ea, sz, (void*)buf_orig_sz);
+bool MemBuf::is_alloced(u64 ea) {
+	return is_alloced(ea, 1);
+}
 
-		} else {
-			printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) found existing alloc of appropriate size\n", ea, sz);
-		}
-		return std::make_pair(buf_ea, *buf);
+bool MemBuf::is_alloced(u64 ea, u32 sz) {
+	const auto bufp = mbufs.lower_bound(ea);
+	if (bufp == mbufs.cend()) {
+		return false;
 	}
-	auto buf = std::make_unique<std::vector<u8>>(sz, 0);
-	g_mbuf[ea] = std::move(buf);
-	printf("mbuf_alloc_non_void(0x%016llx, 0x%08x) new alloc\n", ea, sz);
-	return std::make_pair(ea, buf);
+	const auto buf_ea = bufp->first;
+	const auto buf = &bufp->second;
+	const auto buf_ea_end = buf_ea + (*buf)->size();
+	if (ea >= buf_ea && ea + sz <= buf_ea_end) {
+		return true;
+	}
+	return false;
+}
+
+mbuf_pair_ref_t MemBuf::find(u64 ea) {
+	return find(ea, 1);
+}
+
+mbuf_pair_ref_t MemBuf::find(u64 ea, u32 sz) {
+	auto bufp = mbufs.lower_bound(ea);
+	if (bufp == mbufs.cend()) {
+		assert(!"value does not exist");
+	}
+	const auto buf_ea = bufp->first;
+	auto buf = &bufp->second;
+	const auto buf_ea_end = buf_ea + (*buf)->size();
+	if (ea >= buf_ea && ea + sz <= buf_ea_end) {
+		return std::make_pair(buf_ea, std::ref(bufp->second));
+	}
+	assert(!"value does not exist");
+}
+
+mbufs_t::mapped_type& MemBuf::operator[](u64 ea) {
+	(void)ea;
+	assert(!"not implemented");
 }
 
 extern "C"
 void mbuf_alloc(u64 ea, u32 sz) {
 	printf("mbuf_alloc(0x%016llx, 0x%08x)\n", ea, sz);
-	mbuf_alloc_non_void(ea, sz);
+	gmb.alloc(ea, sz);
 	return;
 }
 
 extern "C"
 void mbuf_set(u64 ea, const u8 *buf, u32 sz) {
 	printf("mbuf_set(0x%016llx, %p, 0x%08x)\n", ea, buf, sz);
-	mbuf_ptr_pair bufp;
-	if (auto b = mbuf_find(ea, sz, true)) {
-		printf("mbuf_set(0x%016llx, %p, 0x%08x) found existing\n", ea, buf, sz);
-		bufp = b.value();
-	} else {
-		printf("mbuf_set(0x%016llx, %p, 0x%08x) allocing new\n", ea, buf, sz);
-		bufp = mbuf_alloc_non_void(ea, sz);
-	}
-	auto bufp_off = bufp.second->data() + (ea - bufp.first);
-	printf("bufp_off: %p\n", bufp_off);
-	printf("bufp_off before: ");
-	print_hex(bufp_off, 0x10);
-	// debug_break();
-	printf("\n");
-	memcpy(bufp_off, buf, sz);
-	printf("bufp_off after: ");
-	print_hex(bufp_off, 0x10);
-	printf("\n");
+	memcpy(mbuf_get(ea, sz), buf, sz);
 	return;
 }
 
 extern "C"
 u8 *mbuf_get(u64 ea, u32 sz) {
 	printf("mbuf_get(0x%016llx, 0x%08x)\n", ea, sz);
-	if (auto found_buf = mbuf_find(ea, sz, true)) {
-		auto buf_ea = found_buf->first;
-		auto buf = found_buf->second;
-		printf("mbuf_get(0x%016llx, 0x%08x) buf = %p buf->data() = %p\n", ea, sz, buf, buf->data());
-		return buf->data() + (ea - buf_ea);
+	if (!gmb.is_alloced(ea, sz)) {
+		return nullptr;
+	} else {
+		gmb.alloc(ea, sz);
+		auto mbuf = gmb.find(ea);
+		const auto buf_ea = mbuf.first;
+		auto buf = &mbuf.second.get();
+		return (*buf)->data() + (ea - buf_ea);
 	}
-	return nullptr;
 }
