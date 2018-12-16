@@ -69,7 +69,7 @@ void MemBuf::alloc(u64 ea, u32 sz) {
 		auto &buf = *mbuf.second.get();
 		const auto buf_sz = buf.size();
 		const auto buf_ea_end = buf_ea + buf_sz;
-		const auto over = buf_ea_end - (ea + sz);
+		const auto over = (ea + sz) - buf_ea_end;
 		if (over > 0) {
 			fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x}) resize\n", ea, sz);
 			buf.resize(buf_sz + over);
