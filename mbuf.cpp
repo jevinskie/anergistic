@@ -177,8 +177,24 @@ void mbuf_alloc(u64 ea, u32 sz) {
 }
 
 extern "C"
+u64 mbuf_get_buf_base_ea(u64 ea) {
+	if (!gmb.is_alloced(ea)) {
+		assert(!"not mapped");
+	}
+	return gmb.find(ea).first;
+}
+
+extern "C"
+u32 mbuf_get_buf_sz(u64 ea) {
+	if (!gmb.is_alloced(ea)) {
+		assert(!"not mapped");
+	}
+	return gmb.find(ea).second.get()->size();
+}
+
+extern "C"
 void mbuf_set(u64 ea, const u8 *buf, u32 sz) {
-	fmt::print("mbuf_set(0x{:016x}, 0x{:08x})\n", ea, buf, sz);
+	fmt::print("mbuf_set(0x{:016x}, {}, 0x{:08x})\n", ea, buf, sz);
 	memcpy(mbuf_get(ea, sz), buf, sz);
 	return;
 }

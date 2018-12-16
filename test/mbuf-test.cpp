@@ -22,6 +22,8 @@ TEST(MBufGetAlloced, MBuf) {
 	for (u32 i = 0; i < sz; ++i) {
 		EXPECT_EQ(bufp[i], 0);
 	}
+	EXPECT_EQ(mbuf_get_buf_base_ea(ea), ea);
+	EXPECT_EQ(mbuf_get_buf_sz(ea), sz);
 }
 
 TEST(MBufSetAlloced, MBuf) {
