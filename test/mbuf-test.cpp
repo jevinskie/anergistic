@@ -123,3 +123,23 @@ TEST(MBufAllocMerge, MBuf) {
 	EXPECT_EQ(new_orig_bufp + 3*sz, new_end_bufp);
 }
 
+TEST(MBufAllocAdjacentPrev, MBuf) {
+	const u64 ea = 0x10000000;
+	const u32 sz = 0x1000;
+	EXPECT_TRUE(mbuf_is_alloced(ea, 1));
+	EXPECT_TRUE(mbuf_is_alloced(ea + sz-1, 1));
+	EXPECT_FALSE(mbuf_is_alloced(ea - sz, 1));
+	EXPECT_FALSE(mbuf_is_alloced(ea - sz-1, 1));
+	auto orig_bufp = mbuf_get(ea, sz);
+	EXPECT_FALSE(mbuf_is_alloced(ea - sz, sz));
+	auto new_bufp = mbuf_get(ea - sz, sz);
+	EXPECT_TRUE(mbuf_is_alloced(ea, 1));
+	EXPECT_TRUE(mbuf_is_alloced(ea + sz-1, 1));
+	EXPECT_TRUE(mbuf_is_alloced(ea - sz, 1));
+	EXPECT_TRUE(mbuf_is_alloced(ea - 1, 1));
+	EXPECT_FALSE(mbuf_is_alloced(ea - sz-1, 1));
+	auto new_orig_bufp = mbuf_get(ea, sz);
+	EXPECT_EQ(new_bufp + sz, new_orig_bufp);
+	EXPECT_EQ(mbuf_get_buf_base_ea(ea), ea - sz);
+	EXPECT_EQ(mbuf_get_buf_sz(ea), 5*sz);
+}
