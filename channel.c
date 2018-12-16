@@ -12,6 +12,7 @@
 #include "main.h"
 #include "config.h"
 #include "channel.h"
+#include "mbuf.h"
 
 //MFC channel values.
 static u32 MFC_LSA;
@@ -111,6 +112,7 @@ void handle_mfc_command(u32 cmd)
 	{
 	case MFC_GET_CMD:
 		printf("DMA_GET\n");
+		memcpy(ctx->ls + MFC_LSA, mbuf_get((u64)MFC_EAH << 32 | MFC_EAL, MFC_Size), MFC_Size);
 #if 0
 		{
 			FILE *f = fopen("dma", "rb");
@@ -128,7 +130,7 @@ void handle_mfc_command(u32 cmd)
 		break;
 	case MFC_PUT_CMD:
 		printf("DMA_PUT\n");
-		
+		memcpy(mbuf_get((u64)MFC_EAH << 32 | MFC_EAL, MFC_Size), ctx->ls + MFC_LSA, MFC_Size);
 		break;
 	default:
 		printf("unknown command\n");
