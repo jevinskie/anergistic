@@ -42,3 +42,40 @@ TEST(MBufSetAlloced, MBuf) {
 	EXPECT_NE(bufp, nullptr);
 	EXPECT_EQ(memcmp(bufp, new_buf, sz), 0);
 }
+
+TEST(MBufAllocAdjacent, MBuf) {
+	const u64 ea = 0x10000000;
+	const u32 sz = 0x1000;
+	auto orig_bufp = mbuf_get(ea, sz);
+	EXPECT_NE(orig_bufp, nullptr);
+	auto new_bufp = mbuf_get(ea + sz, sz);
+	EXPECT_EQ(new_bufp, nullptr);
+	mbuf_alloc(ea + sz, sz);
+	new_bufp = mbuf_get(ea + sz, sz);
+	EXPECT_EQ(orig_bufp + sz, new_bufp);
+}
+
+TEST(MBufAllocNonAdjacent, MBuf) {
+	const u64 ea = 0x10000000;
+	const u32 sz = 0x1000;
+	auto orig_bufp = mbuf_get(ea, sz);
+	EXPECT_NE(orig_bufp, nullptr);
+	auto new_bufp = mbuf_get(ea + 3*sz, sz);
+	EXPECT_EQ(new_bufp, nullptr);
+	mbuf_alloc(ea + 3*sz, sz);
+	new_bufp = mbuf_get(ea + sz, sz);
+	EXPECT_NE(orig_bufp + 3*sz, new_bufp);
+}
+
+TEST(MBufAllocMerge, MBuf) {
+	const u64 ea = 0x10000000;
+	const u32 sz = 0x1000;
+	auto orig_bufp = mbuf_get(ea, sz);
+	EXPECT_NE(orig_bufp, nullptr);
+	auto end_bufp = mbuf_get(ea + 3*sz, sz);
+	EXPECT_NE(end_bufp, nullptr);
+	auto middle_bufp = mbuf_get(ea + 2*sz, sz);
+	EXPECT_EQ(middle_bufp, nullptr);
+
+}
+

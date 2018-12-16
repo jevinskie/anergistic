@@ -91,6 +91,12 @@ mbufs_t::mapped_type& MemBuf::operator[](u64 ea) {
 }
 
 extern "C"
+int mbuf_is_alloced(u64 ea, u32 sz) {
+	printf("mbuf_is_alloced(0x%016llx, 0x%08x)\n", ea, sz);
+	return gmb.is_alloced(ea, sz);
+}
+
+extern "C"
 void mbuf_alloc(u64 ea, u32 sz) {
 	printf("mbuf_alloc(0x%016llx, 0x%08x)\n", ea, sz);
 	gmb.alloc(ea, sz);
