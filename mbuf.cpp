@@ -57,12 +57,13 @@ public:
 	mbuf_pair_ref_t find(u64 ea);
 	mbuf_pair_ref_t find(u64 ea, u32 sz);
 	mbufs_t::mapped_type& operator[](u64 ea);
+	void dump_hex_printf();
 };
 
 MemBuf gmb;
 
 void MemBuf::alloc(u64 ea, u32 sz) {
-	fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x})\n", ea, sz);
 	if (is_alloced(ea)) {
 		auto mbuf = find(ea);
 		const auto buf_ea = mbuf.first;
@@ -71,50 +72,50 @@ void MemBuf::alloc(u64 ea, u32 sz) {
 		const auto buf_ea_end = buf_ea + buf_sz;
 		const auto over = (ea + sz) - buf_ea_end;
 		if (over > 0) {
-			fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x}) resize\n", ea, sz);
+			// fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x}) resize\n", ea, sz);
 			buf.resize(buf_sz + over);
 			memset(buf.data() + buf_sz, 0, over);
 		}
 	} else {
-		fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x}) making new vector\n", ea, sz);
+		// fmt::print("MemBuf::alloc(0x{:016x}, 0x{:08x}) making new vector\n", ea, sz);
 		// print_callstack();
 		// debug_break();
 		mbufs[ea] = std::make_unique<mbufs_t::mapped_type::element_type>(sz, 0);
 	}
 	if (is_alloced(ea + sz)) {
-		fmt::print("found adjacent after\n");
+		// fmt::print("found adjacent after\n");
 		auto mbuf = find(ea);
 		auto &buf = *mbuf.second.get();
 		auto adj_mbuf = find(ea + sz);
 		auto &adj_buf = *adj_mbuf.second.get();
-		fmt::print("mbuf: {} adj_mbuf: {}\n", mbuf, adj_mbuf);
+		// fmt::print("mbuf: {} adj_mbuf: {}\n", mbuf, adj_mbuf);
 		if (mbuf != adj_mbuf) {
-			fmt::print("found adjacent after differs\n");
+			// fmt::print("found adjacent after differs\n");
 			const auto buf_sz = buf.size();
 			const auto adj_buf_sz = adj_buf.size();
 			buf.resize(buf_sz + adj_buf_sz);
 			memcpy(buf.data() + buf_sz, adj_buf.data(), adj_buf_sz);
 			mbufs.erase(adj_mbuf.first);
 		} else {
-			fmt::print("found adjacent after same\n");
+			// fmt::print("found adjacent after same\n");
 		}
 	}
 	if (is_alloced(ea - 1)) {
-		fmt::print("found adjacent before\n");
+		// fmt::print("found adjacent before\n");
 		auto mbuf = find(ea);
 		auto &buf = *mbuf.second.get();
 		auto prev_adj_mbuf = find(ea - 1);
 		auto &prev_adj_buf = *prev_adj_mbuf.second.get();
-		fmt::print("mbuf: {} prev_adj_mbuf: {}\n", mbuf, prev_adj_mbuf);
+		// fmt::print("mbuf: {} prev_adj_mbuf: {}\n", mbuf, prev_adj_mbuf);
 		if (mbuf != prev_adj_mbuf) {
-			fmt::print("found adjacent before differs\n");
+			// fmt::print("found adjacent before differs\n");
 			const auto buf_sz = buf.size();
 			const auto prev_adj_buf_sz = prev_adj_buf.size();
 			prev_adj_buf.resize(prev_adj_buf_sz + buf_sz);
 			memcpy(prev_adj_buf.data() + prev_adj_buf_sz, buf.data(), buf_sz);
 			mbufs.erase(mbuf.first);
 		} else {
-			fmt::print("found adjacent before same\n");
+			// fmt::print("found adjacent before same\n");
 		}
 	}
 }
@@ -124,18 +125,18 @@ bool MemBuf::is_alloced(u64 ea) {
 }
 
 bool MemBuf::is_alloced(u64 ea, u32 sz) {
-	fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x})\n", ea, sz);
 	for (const auto &bufp : mbufs) {
 		const auto buf_ea = bufp.first;
 		const auto &buf = *bufp.second;
 		const auto buf_ea_end = buf_ea + buf.size();
-		fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) buf_ea = 0x{:016x} buf_ea_end = 0x{:016x}\n", ea, sz, buf_ea, buf_ea_end);
+		// fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) buf_ea = 0x{:016x} buf_ea_end = 0x{:016x}\n", ea, sz, buf_ea, buf_ea_end);
 		if (ea >= buf_ea && ea + sz <= buf_ea_end) {
-			fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) = true\n", ea, sz);
+			// fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) = true\n", ea, sz);
 			return true;
 		}
 	}
-	fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) = false\n", ea, sz);
+	// fmt::print("MemBuf::is_alloced(0x{:016x}, 0x{:08x}) = false\n", ea, sz);
 	return false;
 }
 
@@ -144,14 +145,14 @@ mbuf_pair_ref_t MemBuf::find(u64 ea) {
 }
 
 mbuf_pair_ref_t MemBuf::find(u64 ea, u32 sz) {
-	fmt::print("MemBuf::find(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("MemBuf::find(0x{:016x}, 0x{:08x})\n", ea, sz);
 	for (auto &bufp : mbufs) {
 		const auto buf_ea = bufp.first;
 		const auto &buf = *bufp.second;
 		const auto buf_ea_end = buf_ea + buf.size();
-		fmt::print("MemBuf::find(0x{:016x}, 0x{:08x}) buf_ea = 0x{:016x} buf_ea_end = 0x{:016x}\n", ea, sz, buf_ea, buf_ea_end);
+		// fmt::print("MemBuf::find(0x{:016x}, 0x{:08x}) buf_ea = 0x{:016x} buf_ea_end = 0x{:016x}\n", ea, sz, buf_ea, buf_ea_end);
 		if (ea >= buf_ea && ea + sz <= buf_ea_end) {
-			fmt::print("MemBuf::find(0x{:016x}, 0x{:08x}) = true\n", ea, sz);
+			// fmt::print("MemBuf::find(0x{:016x}, 0x{:08x}) = true\n", ea, sz);
 			return std::make_pair(buf_ea, std::ref(bufp.second));
 		}
 	}
@@ -163,15 +164,25 @@ mbufs_t::mapped_type& MemBuf::operator[](u64 ea) {
 	assert(!"not implemented");
 }
 
+void MemBuf::dump_hex_printf() {
+	for (const auto &bufp : mbufs) {
+		const auto buf_ea = bufp.first;
+		const auto &buf = *bufp.second;
+		printf("mbuf 0x%016llx\n", buf_ea);
+		print_hex(buf.data(), buf.size());
+		printf("\n");
+	}
+}
+
 extern "C"
 int mbuf_is_alloced(u64 ea, u32 sz) {
-	fmt::print("mbuf_is_alloced(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("mbuf_is_alloced(0x{:016x}, 0x{:08x})\n", ea, sz);
 	return gmb.is_alloced(ea, sz);
 }
 
 extern "C"
 void mbuf_alloc(u64 ea, u32 sz) {
-	fmt::print("mbuf_alloc(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("mbuf_alloc(0x{:016x}, 0x{:08x})\n", ea, sz);
 	gmb.alloc(ea, sz);
 	return;
 }
@@ -194,14 +205,14 @@ u32 mbuf_get_buf_sz(u64 ea) {
 
 extern "C"
 void mbuf_set(u64 ea, const u8 *buf, u32 sz) {
-	fmt::print("mbuf_set(0x{:016x}, {}, 0x{:08x})\n", ea, buf, sz);
+	// fmt::print("mbuf_set(0x{:016x}, {}, 0x{:08x})\n", ea, buf, sz);
 	memcpy(mbuf_get(ea, sz), buf, sz);
 	return;
 }
 
 extern "C"
 u8 *mbuf_get(u64 ea, u32 sz) {
-	fmt::print("mbuf_get(0x{:016x}, 0x{:08x})\n", ea, sz);
+	// fmt::print("mbuf_get(0x{:016x}, 0x{:08x})\n", ea, sz);
 	if (!gmb.is_alloced(ea, sz)) {
 		gmb.alloc(ea, sz);
 	}
@@ -209,4 +220,9 @@ u8 *mbuf_get(u64 ea, u32 sz) {
 	const auto buf_ea = mbuf.first;
 	auto buf = &mbuf.second.get();
 	return (*buf)->data() + (ea - buf_ea);
+}
+
+extern "C"
+void mbuf_dump_hex_printf(void) {
+	gmb.dump_hex_printf();
 }

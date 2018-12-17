@@ -14,6 +14,7 @@
 #include "elf.h"
 #include "emulate.h"
 #include "gdb.h"
+#include "mbuf.h"
 
 struct ctx_t _ctx;
 struct ctx_t *ctx;
@@ -125,8 +126,14 @@ int main(int argc, char *argv[])
 	wbe32(ctx->ls + 0x3e000, 0xff);
 #endif
 
-// #define FDM
+#define FDM
 #ifdef FDM
+	uint8_t ls_3e000[0x20];
+	// memset(ls_3e000, 0xff, sizeof(ls_3e000));
+	for (size_t i = 0; i < sizeof(ls_3e000); ++i) {
+		ls_3e000[i] = i;
+	}
+	mbuf_set(0xdead0000beef0000, ls_3e000, sizeof(ls_3e000));
 	//Set module parameters.
 	//PU DMA area start address.
 	//Dummy to make the module happy.
@@ -152,7 +159,7 @@ int main(int argc, char *argv[])
 	memcpy(ctx->reg[10], fdm_indiv_seed3, sizeof(fdm_indiv_seed3));
 #endif
 
-#define AIM
+// #define AIM
 #ifdef AIM
 	//Set module parameters.
 	//PU DMA area start address.
@@ -225,6 +232,7 @@ int main(int argc, char *argv[])
 	}
 	printf("emulate() returned. we're done!\n");
 	dump_ls();
+	mbuf_dump_hex_printf();
 	free(ctx->ls);
 	gdb_deinit();
 	return 0;
