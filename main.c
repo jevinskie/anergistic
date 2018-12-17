@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	// }
 	ls_3e000_u64[0] = _ES64(0x10000000);
 	ls_3e000_u64[1] = _ES64(0x1000);
-	ls_3e000_u32[4] = _ES32(2);
+	ls_3e000_u32[4] = _ES32(1);
 	mbuf_set(0xdead0000beef0000, ls_3e000, sizeof(ls_3e000));
 	size_t eid2_sz;
 	u8 *eid2 = mmap_file("eid2", &eid2_sz);
@@ -200,8 +200,9 @@ int main(int argc, char *argv[])
 	memcpy(ctx->reg[8], aim_indiv_seed1, sizeof(aim_indiv_seed1));
 	memcpy(ctx->reg[9], aim_indiv_seed2, sizeof(aim_indiv_seed2));
 	memcpy(ctx->reg[10], aim_indiv_seed3, sizeof(aim_indiv_seed3));
-	u8 eid_mkey[] = {0xA6, 0x9E, 0x1B, 0xF2, 0xE8, 0xBE, 0x66, 0xC3, 0x09, 0x42, 0x0A, 0x9C, 0xFA, 0xC1, 0xC0, 0x1B, 0xA7, 0x79, 0x25, 0x58, 0xFC, 0xEF, 0x83, 0x8B, 0x38, 0xEC, 0x07, 0x6F, 0xE2, 0xAD, 0x86, 0xB9, 0x9D, 0xBB, 0x8C, 0x35, 0x98, 0xCD, 0xDA, 0xE9, 0x71, 0xB5, 0x02, 0xA4, 0xDE, 0x9D, 0x38, 0x28};
-	memcpy(ctx->ls, eid_mkey, sizeof(eid_mkey));
+	size_t eid_root_key_sz;
+	u8 *eid_root_key = mmap_file("eid_root_key", &eid_root_key_sz);;
+	memcpy(ctx->ls, eid_root_key, eid_root_key_sz);
 #endif
 
 	if (gdb_port < 0) {
@@ -213,6 +214,7 @@ int main(int argc, char *argv[])
 	}
 
 	elf_load(elf_path);
+	memcpy(ctx->ls, eid_root_key, eid_root_key_sz);
 
 	printf("mbufs before:\n");
 	mbuf_dump_hex_printf();
