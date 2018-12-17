@@ -20,7 +20,7 @@ set(CMAKE_C_EXTENSIONS YES)
 add_subdirectory(googletest)
 add_subdirectory(fmt)
 
-add_executable(anergistic main.c elf.c emulate.c emulate-instrs.c helper.c channel.c gdb.c mbuf.cpp hex.c dbgtools/src/callstack.cpp)
+add_executable(anergistic main.c elf.c emulate.c emulate-instrs.c helper.c channel.c gdb.c mbuf.cpp hex.c util.c dbgtools/src/callstack.cpp)
 
 target_include_directories(anergistic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/dbgtools/include)
 target_compile_options(anergistic PRIVATE -Wall -Wextra)

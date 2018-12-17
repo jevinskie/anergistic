@@ -15,6 +15,7 @@
 #include "emulate.h"
 #include "gdb.h"
 #include "mbuf.h"
+#include "util.h"
 
 struct ctx_t _ctx;
 struct ctx_t *ctx;
@@ -128,12 +129,23 @@ int main(int argc, char *argv[])
 
 #define FDM
 #ifdef FDM
-	uint8_t ls_3e000[0x20];
-	// memset(ls_3e000, 0xff, sizeof(ls_3e000));
-	for (size_t i = 0; i < sizeof(ls_3e000); ++i) {
-		ls_3e000[i] = i;
-	}
+	u8 ls_3e000[0x20];
+	u32 *ls_3e000_u32 = (u32*)ls_3e000;
+	u64 *ls_3e000_u64 = (u64*)ls_3e000;
+	memset(ls_3e000, 0x00, sizeof(ls_3e000));
+	// for (size_t i = 0; i < sizeof(ls_3e000); ++i) {
+	// 	ls_3e000[i] = 0x10 + i;
+	// }
+	ls_3e000_u64[0] = _ES64(0x10000000);
+	ls_3e000_u64[1] = _ES64(0x1000);
+	ls_3e000_u32[4] = _ES32(2);
 	mbuf_set(0xdead0000beef0000, ls_3e000, sizeof(ls_3e000));
+	size_t eid2_sz;
+	u8 *eid2 = mmap_file("eid2", &eid2_sz);
+	// memset(eid2 + 0x20, 0, 0x80);
+	// memset(eid2 + 0xA0, 0, 0x690);
+	mbuf_set(0xcafe0000babe0000, eid2, eid2_sz);
+
 	//Set module parameters.
 	//PU DMA area start address.
 	//Dummy to make the module happy.
@@ -141,14 +153,14 @@ int main(int argc, char *argv[])
 	ctx->reg[3][1] = 0xbeef0000;
 	//PU DMA area size.
 	//ctx->reg[4][0] = 0x80;
-	ctx->reg[4][1] = 0x80;
+	ctx->reg[4][1] = 0x1000;
 	//PU EID area start address (first param).
 	//Dummy to make the module happy.	
 	ctx->reg[5][0] = 0xcafe0000;
 	ctx->reg[5][1] = 0xbabe0000;
 	//First param size.
 	//ctx->reg[6][0] = 0x860;
-	ctx->reg[6][1] = 0x860;
+	ctx->reg[6][1] = eid2_sz;
 	const uint8_t fdm_indiv_seed0[] = {0x74, 0x92, 0xE5, 0x7C, 0x2C, 0x7C, 0x63, 0xF4, 0x49, 0x42, 0x26, 0x8F, 0xB4, 0x1C, 0x58, 0xED};
 	const uint8_t fdm_indiv_seed1[] = {0x66, 0x83, 0x41, 0xF9, 0xC9, 0x7B, 0x29, 0x83, 0x96, 0xFA, 0x9D, 0x82, 0x07, 0x51, 0x99, 0xD8};
 	const uint8_t fdm_indiv_seed2[] = {0xBC, 0x1A, 0x93, 0x4B, 0x37, 0x4F, 0xA3, 0x8D, 0x46, 0xAF, 0x94, 0xC7, 0xC3, 0x33, 0x73, 0xB3};
@@ -157,6 +169,10 @@ int main(int argc, char *argv[])
 	memcpy(ctx->reg[8], fdm_indiv_seed1, sizeof(fdm_indiv_seed1));
 	memcpy(ctx->reg[9], fdm_indiv_seed2, sizeof(fdm_indiv_seed2));
 	memcpy(ctx->reg[10], fdm_indiv_seed3, sizeof(fdm_indiv_seed3));
+
+	size_t eid_root_key_sz;
+	u8 *eid_root_key = mmap_file("eid_root_key", &eid_root_key_sz);
+	// memcpy(ctx->ls, eid_root_key, eid_root_key_sz);
 #endif
 
 // #define AIM
@@ -198,6 +214,9 @@ int main(int argc, char *argv[])
 
 	elf_load(elf_path);
 
+	printf("mbufs before:\n");
+	mbuf_dump_hex_printf();
+
 	done = 0;
 
 	while(done == 0) {
@@ -232,6 +251,7 @@ int main(int argc, char *argv[])
 	}
 	printf("emulate() returned. we're done!\n");
 	dump_ls();
+	printf("mbufs after:\n");
 	mbuf_dump_hex_printf();
 	free(ctx->ls);
 	gdb_deinit();

@@ -165,12 +165,14 @@ mbufs_t::mapped_type& MemBuf::operator[](u64 ea) {
 }
 
 void MemBuf::dump_hex_printf() {
+	printf("mbuf dumps:\n");
 	for (const auto &bufp : mbufs) {
 		const auto buf_ea = bufp.first;
 		const auto &buf = *bufp.second;
-		printf("mbuf 0x%016llx\n", buf_ea);
-		print_hex(buf.data(), buf.size());
-		printf("\n");
+		hexdump(buf.data(), buf.size(), buf_ea);
+		// printf("mbuf 0x%016llx\n", buf_ea);
+		// print_hex(buf.data(), buf.size());
+		// printf("\n");
 	}
 }
 
