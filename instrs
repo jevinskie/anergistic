@@ -330,7 +330,7 @@
 	for (i = 1; i < 4; ++i)
 		rtw[i] = 0;
 
-	rtw[0] = channel_rchcnt(ra);
+	rtw[0] = channel_rchcnt(rt, ra);
 }
 
 001100000,ri16,bra,signed,shift2
