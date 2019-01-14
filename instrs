@@ -685,7 +685,7 @@
 {
 	int i;
 	for (i = 0; i < 8; ++i)
-		rth[i] &= i10;
+		rth[i] = rah[i] & i10;
 }
 
 00010100,ri10,andi,signed
