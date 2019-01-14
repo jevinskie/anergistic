@@ -1052,7 +1052,7 @@
 	int i;
 
 	for (i = 0; i < 8; ++i)
-		rth[i] = -(rah[i] == i10);
+		rth[i] = -((s16)rah[i] == i10);
 }
 01111001000,rr,ceqh,half
 {
